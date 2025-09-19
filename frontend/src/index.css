@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent;
+  }
+
+  .sidebar-item {
+    @apply flex items-center px-3 py-2 rounded-lg text-sm text-neutral-700 hover:bg-neutral-100 transition-colors duration-150 cursor-pointer;
+  }
+
+  .sidebar-item.active {
+    @apply bg-orange-50 text-orange-900 border-r-2 border-orange-600;
+  }
+
+  .message-user {
+    @apply bg-neutral-50 border border-neutral-200;
+  }
+
+  .message-assistant {
+    @apply bg-white border border-neutral-200;
+  }
+
+  
+}
