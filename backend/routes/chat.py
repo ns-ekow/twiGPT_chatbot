@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, Response, stream_template, curren
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db, User, Conversation, Message
 from services.ollama_service import create_ollama_service
+from services.huggingface_service import create_huggingface_service
 from services.speech_service import create_speech_service
 from datetime import datetime
 import json
@@ -9,6 +10,18 @@ import os
 import tempfile
 
 chat_bp = Blueprint('chat', __name__)
+
+def get_model_service(model_name: str):
+    """Get the appropriate service for a model"""
+    ollama_service = create_ollama_service()
+    huggingface_service = create_huggingface_service()
+
+    if ollama_service.is_model_available(model_name):
+        return ollama_service
+    elif huggingface_service.is_model_available(model_name):
+        return huggingface_service
+    else:
+        raise ValueError(f"Model {model_name} not available")
 
 @chat_bp.route('/conversations', methods=['GET'])
 @jwt_required()
@@ -124,13 +137,13 @@ def send_message(conversation_id):
         # Push application context for the generator
         with app.app_context():
             print("[DEBUG] App context pushed successfully")
-            ollama_service = create_ollama_service()
-            assistant_response = ""
-            chunk_count = 0
-
             try:
-                print(f"[DEBUG] Starting Ollama stream for model {model_name}")
-                for chunk in ollama_service.chat_stream(model_name, ollama_messages):
+                model_service = get_model_service(model_name)
+                assistant_response = ""
+                chunk_count = 0
+
+                print(f"[DEBUG] Starting stream for model {model_name}")
+                for chunk in model_service.chat_stream(model_name, ollama_messages):
                     assistant_response += chunk
                     chunk_count += 1
                     if chunk_count % 10 == 0:  # Log every 10 chunks
@@ -267,9 +280,10 @@ def change_conversation_model(conversation_id):
     if not new_model:
         return jsonify({"error": "Model name is required"}), 400
     
-    # Verify model is available
-    ollama_service = create_ollama_service()
-    if not ollama_service.is_model_available(new_model):
+    # Verify model is available in either service
+    try:
+        model_service = get_model_service(new_model)
+    except ValueError:
         return jsonify({"error": f"Model {new_model} is not available"}), 400
     
     conversation.model_name = new_model
