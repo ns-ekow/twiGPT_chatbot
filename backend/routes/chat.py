@@ -1,9 +1,12 @@
-from flask import Blueprint, request, jsonify, Response, stream_template, current_app
+from flask import Blueprint, request, jsonify, Response, stream_template, current_app, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db, User, Conversation, Message
 from services.ollama_service import create_ollama_service
+from services.speech_service import create_speech_service
 from datetime import datetime
 import json
+import os
+import tempfile
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -181,6 +184,73 @@ def delete_conversation(conversation_id):
     db.session.commit()
     
     return jsonify({"message": "Conversation deleted"}), 200
+
+@chat_bp.route('/asr', methods=['POST'])
+@jwt_required()
+def transcribe_audio():
+    """Transcribe uploaded audio file to text"""
+    try:
+        if 'audio' not in request.files:
+            return jsonify({"error": "No audio file provided"}), 400
+
+        audio_file = request.files['audio']
+        if audio_file.filename == '':
+            return jsonify({"error": "No audio file selected"}), 400
+
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+            audio_file.save(temp_file.name)
+            temp_path = temp_file.name
+
+        try:
+            # Transcribe using speech service
+            speech_service = create_speech_service()
+            language = request.form.get('language', 'tw')
+            transcription = speech_service.transcribe_audio(temp_path, language)
+
+            return jsonify({"text": transcription}), 200
+
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@chat_bp.route('/tts', methods=['POST'])
+@jwt_required()
+def synthesize_text():
+    """Synthesize text to speech and return audio file"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        language = data.get('language', 'tw')
+        speaker_id = data.get('speaker_id', 'twi_speaker_4')
+
+        if not text:
+            return jsonify({"error": "Text is required"}), 400
+
+        # Generate speech
+        speech_service = create_speech_service()
+        audio_path = speech_service.synthesize_text(text, language, speaker_id)
+
+        try:
+            # Return audio file
+            return send_file(
+                audio_path,
+                mimetype='audio/wav',
+                as_attachment=True,
+                download_name='speech.wav'
+            )
+
+        finally:
+            # Clean up temp file
+            if os.path.exists(audio_path):
+                os.unlink(audio_path)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @chat_bp.route('/conversations/<conversation_id>/model', methods=['PUT'])
 @jwt_required()

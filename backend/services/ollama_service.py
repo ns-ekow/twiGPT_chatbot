@@ -63,7 +63,7 @@ class OllamaService:
                 f"{self.base_url}/api/chat",
                 json=payload,
                 stream=True,
-                timeout=60
+                timeout=300
             )
             
             if response.status_code != 200:

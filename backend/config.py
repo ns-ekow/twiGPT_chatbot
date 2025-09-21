@@ -8,3 +8,4 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-change-in-production'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     OLLAMA_BASE_URL = 'http://localhost:11434'
+    GHANANLP_API_KEY = os.environ.get('GHANANLP_API_KEY') or 'your-ghananlp-api-key-here'
