@@ -198,7 +198,7 @@ def transcribe_audio():
             return jsonify({"error": "No audio file selected"}), 400
 
         # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as temp_file:
             audio_file.save(temp_file.name)
             temp_path = temp_file.name
 

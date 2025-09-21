@@ -7,9 +7,11 @@ import {
   UserIcon,
   CpuChipIcon,
   ClipboardIcon,
-  CheckIcon
+  CheckIcon,
+  SpeakerWaveIcon
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import api from '../../services/api';
 
 const CodeBlock = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
@@ -66,12 +68,49 @@ const Message = ({ message, isLast = false }) => {
   const isUser = message.role === 'user';
   const isStreaming = message.isStreaming;
   const hasError = message.error;
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
 
   const formatTime = (timestamp) => {
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
     } catch {
       return 'now';
+    }
+  };
+
+  const handleTTS = async () => {
+    if (isUser || isStreaming || hasError) return;
+
+    setIsPlayingTTS(true);
+    try {
+      const response = await api.post('/chat/tts', {
+        text: message.content,
+        language: 'tw',
+        speaker_id: 'twi_speaker_4'
+      }, {
+        responseType: 'blob'
+      });
+
+      const audioBlob = new Blob([response.data], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsPlayingTTS(false);
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsPlayingTTS(false);
+        alert('Failed to play audio');
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('TTS error:', error);
+      alert('Failed to generate speech');
+      setIsPlayingTTS(false);
     }
   };
 
@@ -103,6 +142,17 @@ const Message = ({ message, isLast = false }) => {
               <span className="text-xs text-neutral-400">
                 {formatTime(message.timestamp)}
               </span>
+              {!isUser && !isStreaming && !hasError && (
+                <button
+                  onClick={handleTTS}
+                  disabled={isPlayingTTS}
+                  className="text-xs text-blue-600 hover:text-blue-800 disabled:text-neutral-400 flex items-center space-x-1"
+                  title="Listen to response"
+                >
+                  <SpeakerWaveIcon className="w-3 h-3" />
+                  <span>{isPlayingTTS ? 'Playing...' : 'Play'}</span>
+                </button>
+              )}
               {isStreaming && (
                 <span className="text-xs text-orange-600 animate-pulse">
                   Thinking...

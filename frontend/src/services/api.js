@@ -75,6 +75,26 @@ class ApiService {
     });
     return response.data;
   }
+  async changeConversationModel(conversationId, modelName) {
+    const response = await this.api.put(`/chat/conversations/${conversationId}/model`, {
+      model_name: modelName,
+    });
+    return response.data;
+  }
+
+  // ASR endpoint
+  async transcribeAudio(audioBlob, language = 'tw') {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+    formData.append('language', language);
+
+    const response = await this.api.post('/chat/asr', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
 
   // Streaming message endpoint
   async sendMessage(conversationId, message, onChunk, onComplete, onError) {

@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import Button from '../Common/Button';
+import api from '../../services/api';
 
 const MessageInput = () => {
   const [message, setMessage] = useState('');
   const [rows, setRows] = useState(1);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
   const textareaRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const { currentConversation, sendMessage, isStreaming, createNewConversation } = useChat();
 
@@ -60,7 +65,58 @@ const MessageInput = () => {
     }
   };
 
-  const isDisabled = isStreaming || !message.trim();
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processAudio(audioBlob);
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processAudio = async (audioBlob) => {
+    setIsProcessingAudio(true);
+    try {
+      const response = await api.transcribeAudio(audioBlob, 'tw');
+
+      if (response.text) {
+        setMessage(response.text);
+        textareaRef.current?.focus();
+      }
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      alert('Failed to transcribe audio. Please try again.');
+    } finally {
+      setIsProcessingAudio(false);
+    }
+  };
+
+  const isDisabled = isStreaming || !message.trim() || isProcessingAudio;
 
   return (
     <div className="border-t border-neutral-200 bg-white">
@@ -86,7 +142,20 @@ const MessageInput = () => {
                 style={{ minHeight: '52px', maxHeight: '200px' }}
               />
 
-              <div className="absolute right-3 bottom-3">
+              <div className="absolute right-3 bottom-3 flex space-x-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isStreaming || isProcessingAudio}
+                  className={`p-2 ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+                >
+                  {isRecording ? (
+                    <StopIcon className="w-4 h-4" />
+                  ) : (
+                    <MicrophoneIcon className="w-4 h-4" />
+                  )}
+                </Button>
                 <Button
                   type="submit"
                   size="sm"
@@ -103,6 +172,13 @@ const MessageInput = () => {
             <div className="mt-2 text-sm text-orange-600 flex items-center space-x-2">
               <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
               <span>Assistant is thinking...</span>
+            </div>
+          )}
+
+          {isProcessingAudio && (
+            <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span>Processing audio...</span>
             </div>
           )}
 
