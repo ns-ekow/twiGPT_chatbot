@@ -26,4 +26,5 @@ class Message(db.Model):
     conversation_id = db.Column(db.String(36), db.ForeignKey('conversation.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
+    audio_url = db.Column(db.String(255), nullable=True)  # Path to pre-generated audio file
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)

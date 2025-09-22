@@ -69,6 +69,7 @@ const Message = ({ message, isLast = false }) => {
   const isStreaming = message.isStreaming;
   const hasError = message.error;
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+  const hasPreGeneratedAudio = message.audio_url && !isUser;
 
   const formatTime = (timestamp) => {
     try {
@@ -141,15 +142,27 @@ const Message = ({ message, isLast = false }) => {
                 {formatTime(message.timestamp)}
               </span>
               {!isUser && !isStreaming && !hasError && (
-                <button
-                  onClick={handleTTS}
-                  disabled={isPlayingTTS}
-                  className="text-xs text-blue-600 hover:text-blue-800 disabled:text-neutral-400 flex items-center space-x-1"
-                  title="Listen to response"
-                >
-                  <SpeakerWaveIcon className="w-3 h-3" />
-                  <span>{isPlayingTTS ? 'Playing...' : 'Play'}</span>
-                </button>
+                hasPreGeneratedAudio ? (
+                  <audio
+                    controls
+                    className="h-6 w-32"
+                    preload="none"
+                    title="Listen to response"
+                  >
+                    <source src={message.audio_url} type="audio/wav" />
+                    Your browser does not support the audio element.
+                  </audio>
+                ) : (
+                  <button
+                    onClick={handleTTS}
+                    disabled={isPlayingTTS}
+                    className="text-xs text-blue-600 hover:text-blue-800 disabled:text-neutral-400 flex items-center space-x-1"
+                    title="Listen to response"
+                  >
+                    <SpeakerWaveIcon className="w-3 h-3" />
+                    <span>{isPlayingTTS ? 'Playing...' : 'Play'}</span>
+                  </button>
+                )
               )}
               {isStreaming && (
                 <span className="text-xs text-orange-600 animate-pulse">

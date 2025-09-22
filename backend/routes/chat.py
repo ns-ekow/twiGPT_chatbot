@@ -84,6 +84,7 @@ def get_conversation(conversation_id):
             "id": msg.id,
             "role": msg.role,
             "content": msg.content,
+            "audio_url": msg.audio_url,
             "timestamp": msg.timestamp.isoformat()
         } for msg in messages]
     })
@@ -160,6 +161,23 @@ def send_message(conversation_id):
                     content=assistant_response
                 )
                 db.session.add(assistant_message)
+                db.session.flush()  # Get the message ID without committing
+
+                # Generate TTS audio for assistant messages
+                print(f"[DEBUG] Generating TTS audio for message {assistant_message.id}")
+                speech_service = create_speech_service()
+                audio_url = speech_service.generate_message_audio(
+                    assistant_message.id,
+                    assistant_response,
+                    language='tw',
+                    speaker_id='twi_speaker_4'
+                )
+
+                if audio_url:
+                    assistant_message.audio_url = audio_url
+                    print(f"[DEBUG] TTS audio generated: {audio_url}")
+                else:
+                    print("[DEBUG] TTS audio generation failed, continuing without audio")
 
                 # Update conversation title if it's the first message
                 if conversation_title == 'New Conversation' and message_count == 1:
@@ -282,23 +300,44 @@ def synthesize_text():
 def change_conversation_model(conversation_id):
     user_id = get_jwt_identity()
     conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
-    
+
     if not conversation:
         return jsonify({"error": "Conversation not found"}), 404
-    
+
     data = request.get_json()
     new_model = data.get('model_name')
-    
+
     if not new_model:
         return jsonify({"error": "Model name is required"}), 400
-    
+
     # Verify model is available in either service
     try:
         model_service = get_model_service(new_model)
     except ValueError:
         return jsonify({"error": f"Model {new_model} is not available"}), 400
-    
+
     conversation.model_name = new_model
     db.session.commit()
-    
+
     return jsonify({"message": f"Model changed to {new_model}"}), 200
+
+@chat_bp.route('/audio/<filename>')
+@jwt_required()
+def serve_audio(filename):
+    """Serve pre-generated audio files for messages"""
+    try:
+        from services.speech_service import create_speech_service
+        speech_service = create_speech_service()
+        audio_path = os.path.join(speech_service.audio_dir, filename)
+
+        if not os.path.exists(audio_path):
+            return jsonify({"error": "Audio file not found"}), 404
+
+        return send_file(
+            audio_path,
+            mimetype='audio/wav',
+            as_attachment=False  # Allow direct playback in browser
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
