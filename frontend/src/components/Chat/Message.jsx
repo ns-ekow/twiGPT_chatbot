@@ -83,13 +83,11 @@ const Message = ({ message, isLast = false }) => {
 
     setIsPlayingTTS(true);
     try {
-      const response = await api.post('/chat/tts', {
-        text: message.content,
-        language: 'tw',
-        speaker_id: 'twi_speaker_4'
-      }, {
-        responseType: 'blob'
-      });
+      const response = await api.synthesizeText(
+        message.content,
+        'tw',
+        'twi_speaker_4'
+      );
 
       const audioBlob = new Blob([response.data], { type: 'audio/wav' });
       const audioUrl = URL.createObjectURL(audioBlob);

@@ -96,6 +96,18 @@ class ApiService {
     return response.data;
   }
 
+  // TTS endpoint
+  async synthesizeText(text, language = 'tw', speakerId = 'twi_speaker_4') {
+    const response = await this.api.post('/chat/tts', {
+      text,
+      language,
+      speaker_id: speakerId
+    }, {
+      responseType: 'blob'
+    });
+    return response;
+  }
+
   // Streaming message endpoint
   async sendMessage(conversationId, message, onChunk, onComplete, onError) {
     try {

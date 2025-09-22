@@ -2,22 +2,28 @@ import librosa
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 import tempfile
 import os
-import requests  # Keep for TTS
-from config import Config
+import hashlib
+from gradio_client import Client
 
 class SpeechService:
     def __init__(self):
-        # Keep TTS API config
-        self.api_key = Config.GHANANLP_API_KEY
-        self.tts_url = "https://translation-api.ghananlp.org/tts/v1/synthesize"
-        self.headers = {
-            "Ocp-Apim-Subscription-Key": self.api_key
-        }
+        # TTS client
+        self.tts_client = Client("Ghana-NLP/Southern-Ghana-TTS-Public")
+
+        # TTS cache directory
+        self.tts_cache_dir = os.path.join(os.getcwd(), 'tts_cache')
+        os.makedirs(self.tts_cache_dir, exist_ok=True)
 
         # New: Load Whisper model and processor for ASR
         self.model = None
         self.processor = None
         self._load_whisper_model()
+
+    def _get_cache_key(self, text, language, speaker_id):
+        """Generate a unique cache key for TTS requests"""
+        # Create a hash of the input parameters
+        cache_string = f"{text}|{language}|{speaker_id}"
+        return hashlib.md5(cache_string.encode('utf-8')).hexdigest() + '.wav'
 
     def _load_whisper_model(self):
         """Lazy-load the Whisper model to avoid startup delays."""
@@ -47,30 +53,45 @@ class SpeechService:
         except Exception as e:
             raise Exception(f"ASR transcription failed: {str(e)}")
 
-    # TTS method remains unchanged
     def synthesize_text(self, text, language="tw", speaker_id="twi_speaker_4"):
-        """Synthesize text to speech using GhanaNLP TTS API"""
+        """Synthesize text to speech using Ghana-NLP Southern Ghana TTS API"""
         try:
-            payload = {
-                "text": text,
-                "language": language,
-                "speaker_id": speaker_id
-            }
+            # Generate cache key
+            cache_key = self._get_cache_key(text, language, speaker_id)
+            cache_path = os.path.join(self.tts_cache_dir, cache_key)
 
-            response = requests.post(
-                self.tts_url,
-                headers={**self.headers, "Content-Type": "application/json"},
-                json=payload,
-                timeout=30
+            # Check if cached file exists
+            if os.path.exists(cache_path):
+                print(f"[TTS Cache] Using cached audio: {cache_path}")
+                return cache_path
+
+            # Map parameters to new API
+            lang = "Asante Twi"  # Default language mapping
+            speaker = "Female"   # Default speaker mapping
+
+            print(f"[TTS Cache] Generating new audio for: '{text[:50]}...'")
+
+            result = self.tts_client.predict(
+                text=text,
+                lang=lang,
+                speaker=speaker,
+                api_name="/predict"
             )
 
-            if response.status_code == 200:
-                # Save WAV audio to temp file
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-                    temp_file.write(response.content)
-                    return temp_file.name
+            # Result is a file path to the audio file
+            if isinstance(result, str) and os.path.exists(result):
+                # Read the audio file and save to cache
+                with open(result, 'rb') as audio_file:
+                    audio_bytes = audio_file.read()
+
+                # Save to cache
+                with open(cache_path, 'wb') as cache_file:
+                    cache_file.write(audio_bytes)
+
+                print(f"[TTS Cache] Saved to cache: {cache_path}")
+                return cache_path
             else:
-                raise Exception(f"TTS API error: {response.status_code} - {response.text}")
+                raise Exception(f"Unexpected result from TTS API: {result}")
 
         except Exception as e:
             raise Exception(f"TTS synthesis failed: {str(e)}")

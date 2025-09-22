@@ -248,21 +248,33 @@ def synthesize_text():
         speech_service = create_speech_service()
         audio_path = speech_service.synthesize_text(text, language, speaker_id)
 
-        try:
-            # Return audio file
-            return send_file(
-                audio_path,
-                mimetype='audio/wav',
-                as_attachment=True,
-                download_name='speech.wav'
-            )
+        # Check if file exists and has content
+        if not os.path.exists(audio_path):
+            return jsonify({"error": "Audio file was not created"}), 500
 
-        finally:
-            # Clean up temp file
-            if os.path.exists(audio_path):
-                os.unlink(audio_path)
+        file_size = os.path.getsize(audio_path)
+        if file_size == 0:
+            return jsonify({"error": "Audio file is empty"}), 500
+
+        # Read the audio file and return as response
+        with open(audio_path, 'rb') as audio_file:
+            audio_data = audio_file.read()
+
+        # Return audio data directly
+        response = current_app.response_class(
+            audio_data,
+            mimetype='audio/wav',
+            headers={
+                'Content-Disposition': 'attachment; filename=speech.wav',
+                'Content-Length': str(len(audio_data))
+            }
+        )
+        return response
 
     except Exception as e:
+        print(f"[TTS] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @chat_bp.route('/conversations/<conversation_id>/model', methods=['PUT'])
