@@ -1,4 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
 import torch
 from typing import Generator, Dict, Any, List
 
@@ -17,6 +18,14 @@ class HuggingFaceService:
             'tokenizer': None,
             'model': None
         }
+        self.models["FelixYaw/twi-lora-model"] = {
+            'name': "FelixYaw/twi-lora-model",
+            'size': 0,  # You can estimate or leave as 0
+            'modified_at': '',
+            'tokenizer': None,
+            'model': None,
+            'peft_base': "FelixYaw/twi-model"
+        }
 
     def get_available_models(self) -> Dict[str, Any]:
         """Get list of available Hugging Face models"""
@@ -30,7 +39,16 @@ class HuggingFaceService:
         if self.models[model_name]['model'] is None:
             print(f"Loading Hugging Face model: {model_name}")
             self.models[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(model_name)
-            self.models[model_name]['model'] = AutoModelForCausalLM.from_pretrained(model_name)
+
+            # Check if this is a PEFT model
+            if 'peft_base' in self.models[model_name]:
+                base_model_name = self.models[model_name]['peft_base']
+                print(f"Loading PEFT model with base: {base_model_name}")
+                base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
+                self.models[model_name]['model'] = PeftModel.from_pretrained(base_model, model_name)
+            else:
+                self.models[model_name]['model'] = AutoModelForCausalLM.from_pretrained(model_name)
+
             # Move to GPU if available
             if torch.cuda.is_available():
                 self.models[model_name]['model'] = self.models[model_name]['model'].cuda()

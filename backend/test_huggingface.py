@@ -19,12 +19,14 @@ def test_model_loading():
         models = service.get_available_models()
         print(f"Available models: {list(models.keys())}")
 
-        model_name = "FelixYaw/twi-gpt-lora-kaggle"
-        if service.is_model_available(model_name):
-            print(f"✓ Model {model_name} is available")
-        else:
-            print(f"✗ Model {model_name} is not available")
-            return False
+        # Test both models
+        test_models = ["FelixYaw/twi-gpt-lora-kaggle", "FelixYaw/twi-lora-model"]
+        for model_name in test_models:
+            if service.is_model_available(model_name):
+                print(f"✓ Model {model_name} is available")
+            else:
+                print(f"✗ Model {model_name} is not available")
+                return False
 
         return True
     except Exception as e:

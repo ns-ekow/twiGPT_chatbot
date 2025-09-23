@@ -66,4 +66,5 @@ Werkzeug==3.1.3
 zope.event==6.0
 zope.interface==8.0
 
+peft
 gradio_client
