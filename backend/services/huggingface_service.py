@@ -53,6 +53,23 @@ class HuggingFaceService:
             if torch.cuda.is_available():
                 self.models[model_name]['model'] = self.models[model_name]['model'].cuda()
 
+    def _filter_assistant_response(self, response: str) -> str:
+        """Filter response to extract only the first Assistant response and avoid repetitions"""
+        # Find the first "Assistant:" occurrence
+        assistant_start = response.find("Assistant:")
+        if assistant_start == -1:
+            return response.strip()
+
+        # Extract from "Assistant:" onwards
+        assistant_response = response[assistant_start + len("Assistant:"):].strip()
+
+        # Find the next "Assistant:" to cut off repetitions
+        next_assistant = assistant_response.find("Assistant:")
+        if next_assistant != -1:
+            assistant_response = assistant_response[:next_assistant].strip()
+
+        return assistant_response
+
     def chat_stream(self, model: str, messages: List[Dict[str, str]],
                    system_message: str = None) -> Generator[str, None, None]:
         """Stream chat completion from Hugging Face model"""
@@ -83,7 +100,7 @@ class HuggingFaceService:
                 output = model_obj.generate(
                     **inputs,
                     max_new_tokens=100,  # Adjust as needed
-                    temperature=0.8,
+                    temperature=0.7,
                     top_p=0.9,
                     do_sample=True,
                     pad_token_id=tokenizer.eos_token_id
@@ -95,8 +112,11 @@ class HuggingFaceService:
             # Extract only the new part (after the input)
             new_response = full_response[len(conversation):].strip()
 
+            # Filter out repetitions for cleaner response
+            filtered_response = self._filter_assistant_response(new_response)
+
             # Yield chunks for streaming
-            for char in new_response:
+            for char in filtered_response:
                 yield char
 
         except Exception as e:

@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, Response, stream_template, curren
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db, User, Conversation, Message
 from services.ollama_service import create_ollama_service
-from services.huggingface_service import create_huggingface_service
+from services.huggingface_service import create_huggingface_service, HuggingFaceService
 from services.speech_service import create_speech_service
 from datetime import datetime
 import json
@@ -113,21 +113,29 @@ def send_message(conversation_id):
     db.session.add(user_message)
     db.session.commit()
 
-    # Get conversation history
-    messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.timestamp.asc()).all()
-
-    # Prepare messages for Ollama
-    ollama_messages = []
-    for msg in messages:
-        ollama_messages.append({
-            "role": msg.role,
-            "content": msg.content
-        })
-
     # Store needed data
     model_name = conversation.model_name
     conversation_title = conversation.title
+
+    # Get model service to determine context handling
+    model_service = get_model_service(model_name)
+
+    # Get conversation history
+    messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.timestamp.asc()).all()
     message_count = len(messages)
+
+    # Prepare messages based on service type
+    if isinstance(model_service, HuggingFaceService):
+        # For Hugging Face models, only send the last user message
+        ollama_messages = [{"role": "user", "content": message_content}]
+    else:
+        # For Ollama models, send full context
+        ollama_messages = []
+        for msg in messages:
+            ollama_messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
 
     # Capture app object for context management in generator
     app = current_app._get_current_object()
@@ -139,7 +147,6 @@ def send_message(conversation_id):
         with app.app_context():
             print("[DEBUG] App context pushed successfully")
             try:
-                model_service = get_model_service(model_name)
                 assistant_response = ""
                 chunk_count = 0
 
