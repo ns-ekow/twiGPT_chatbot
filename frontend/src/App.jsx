@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './components/Common/Toast';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import ProtectedRoute from './components/Common/ProtectedRoute';
@@ -11,36 +12,38 @@ import ChatPage from './components/Chat/ChatPage';
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <ToastProvider>
-            <div className="App">
-              <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/register" element={<RegisterForm />} />
+      <LanguageProvider>
+        <Router>
+          <AuthProvider>
+            <ToastProvider>
+              <div className="App">
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/login" element={<LoginForm />} />
+                  <Route path="/register" element={<RegisterForm />} />
 
-                {/* Protected routes */}
-                <Route
-                  path="/chat"
-                  element={
-                    <ProtectedRoute>
-                      <ChatPage />
-                      
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Protected routes */}
+                  <Route
+                    path="/chat"
+                    element={
+                      <ProtectedRoute>
+                        <ChatPage />
 
-                {/* Redirect root to chat */}
-                <Route path="/" element={<Navigate to="/chat" replace />} />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Catch all - redirect to chat */}
-                <Route path="*" element={<Navigate to="/chat" replace />} />
-              </Routes>
-            </div>
-          </ToastProvider>
-        </AuthProvider>
-      </Router>
+                  {/* Redirect root to chat */}
+                  <Route path="/" element={<Navigate to="/chat" replace />} />
+
+                  {/* Catch all - redirect to chat */}
+                  <Route path="*" element={<Navigate to="/chat" replace />} />
+                </Routes>
+              </div>
+            </ToastProvider>
+          </AuthProvider>
+        </Router>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

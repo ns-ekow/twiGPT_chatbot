@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PlusIcon,
   ArrowRightOnRectangleIcon,
@@ -9,9 +10,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import ConversationList from './ConversationList';
 import ModelSelector from './ModelSelector';
+import LanguageSwitcher from '../Common/LanguageSwitcher';
 import Button from '../Common/Button';
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { createNewConversation } = useChat();
 
@@ -28,9 +31,12 @@ const Sidebar = () => {
       {/* Header */}
       <div className="p-4 border-b border-neutral-200">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-neutral-900">
-            TwiGpt
-          </h1>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-xl font-bold text-neutral-900">
+              {t('appName')}
+            </h1>
+            <LanguageSwitcher />
+          </div>
           <Button
             variant="primary"
             size="sm"
@@ -38,7 +44,7 @@ const Sidebar = () => {
             className="flex items-center space-x-1"
           >
             <PlusIcon className="w-4 h-4" />
-            <span>New</span>
+            <span>{t('newChat')}</span>
           </Button>
         </div>
 
@@ -74,7 +80,7 @@ const Sidebar = () => {
             <button
               className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
               onClick={logout}
-              title="Sign out"
+              title={t('signOut')}
             >
               <ArrowRightOnRectangleIcon className="w-4 h-4" />
             </button>

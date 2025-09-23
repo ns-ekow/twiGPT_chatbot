@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { useAuth } from '../../context/AuthContext';
 
 const RegisterForm = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -37,25 +39,25 @@ const RegisterForm = () => {
     const newErrors = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = t('usernameRequired');
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = t('usernameMinLength');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = t('emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('passwordMinLength');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordsDoNotMatch');
     }
 
     return newErrors;
@@ -87,15 +89,15 @@ const RegisterForm = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold text-neutral-900">
-            Create your account
+            {t('createAccountTitle')}
           </h2>
           <p className="mt-2 text-sm text-neutral-600">
-            Already have an account?{' '}
+            {t('alreadyHaveAccount')}{' '}
             <Link
               to="/login"
               className="font-medium text-orange-600 hover:text-orange-500"
             >
-              Sign in
+              {t('signIn')}
             </Link>
           </p>
         </div>
@@ -109,47 +111,47 @@ const RegisterForm = () => {
 
           <div className="space-y-4">
             <Input
-              label="Username"
+              label={t('username')}
               name="username"
               type="text"
               autoComplete="username"
               value={formData.username}
               onChange={handleChange}
               error={errors.username}
-              placeholder="Choose a username"
+              placeholder={t('chooseUsername')}
             />
 
             <Input
-              label="Email"
+              label={t('email')}
               name="email"
               type="email"
               autoComplete="email"
               value={formData.email}
               onChange={handleChange}
               error={errors.email}
-              placeholder="Enter your email"
+              placeholder={t('enterEmail')}
             />
 
             <Input
-              label="Password"
+              label={t('password')}
               name="password"
               type="password"
               autoComplete="new-password"
               value={formData.password}
               onChange={handleChange}
               error={errors.password}
-              placeholder="Choose a password"
+              placeholder={t('choosePassword')}
             />
 
             <Input
-              label="Confirm Password"
+              label={t('confirmPassword')}
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
               value={formData.confirmPassword}
               onChange={handleChange}
               error={errors.confirmPassword}
-              placeholder="Confirm your password"
+              placeholder={t('confirmYourPassword')}
             />
           </div>
 
@@ -159,7 +161,7 @@ const RegisterForm = () => {
             loading={isLoading}
             size="lg"
           >
-            Create Account
+            {t('createAccount')}
           </Button>
         </form>
       </div>

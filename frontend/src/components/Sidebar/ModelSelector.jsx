@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon, CpuChipIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import Button from '../Common/Button';
 
 const ModelSelector = () => {
+  const { t } = useTranslation();
   const { currentConversation, availableModels, changeModel } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
@@ -49,7 +51,7 @@ const ModelSelector = () => {
               {currentModel.name}
             </p>
             <p className="text-xs text-neutral-500">
-              {isChanging ? 'Changing...' : 'Current model'}
+              {isChanging ? t('changing') : t('currentModel')}
             </p>
           </div>
         </div>
@@ -64,7 +66,7 @@ const ModelSelector = () => {
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
           <div className="p-2">
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide px-2 py-1">
-              Available Models
+              {t('availableModels')}
             </p>
             {availableModels.map((model) => (
               <button

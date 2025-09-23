@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PaperAirplaneIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import Button from '../Common/Button';
 import api from '../../services/api';
 
 const MessageInput = () => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [rows, setRows] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
@@ -88,7 +90,7 @@ const MessageInput = () => {
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('Could not access microphone. Please check permissions.');
+      alert(t('microphoneError'));
     }
   };
 
@@ -110,7 +112,7 @@ const MessageInput = () => {
       }
     } catch (error) {
       console.error('Error processing audio:', error);
-      alert('Failed to transcribe audio. Please try again.');
+      alert(t('transcriptionError'));
     } finally {
       setIsProcessingAudio(false);
     }
@@ -131,8 +133,8 @@ const MessageInput = () => {
                 onKeyDown={handleKeyDown}
                 placeholder={
                   currentConversation
-                    ? "Type your message... (Enter to send, Shift+Enter for new line)"
-                    : "Start a new conversation..."
+                    ? t('typeMessage')
+                    : t('startConversation')
                 }
                 disabled={isStreaming}
                 className={`w-full px-4 py-3 pr-12 border border-neutral-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
@@ -171,27 +173,27 @@ const MessageInput = () => {
           {isStreaming && (
             <div className="mt-2 text-sm text-orange-600 flex items-center space-x-2">
               <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-              <span>Assistant is thinking...</span>
+              <span>{t('assistantThinking')}</span>
             </div>
           )}
 
           {isProcessingAudio && (
             <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Processing audio...</span>
+              <span>{t('processingAudio')}</span>
             </div>
           )}
 
           <div className="mt-2 text-xs text-neutral-500 flex items-center justify-between">
             <span>
               {currentConversation ? (
-                `Using ${currentConversation.model_name}`
+                `${t('usingModel')} ${currentConversation.model_name}`
               ) : (
-                'Will create new conversation'
+                t('willCreateConversation')
               )}
             </span>
             <span>
-              Enter to send • Shift+Enter for new line
+              {t('sendInstructions')}
             </span>
           </div>
         </form>

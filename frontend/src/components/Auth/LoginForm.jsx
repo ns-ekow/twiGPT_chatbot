@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginForm = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -37,10 +39,10 @@ const LoginForm = () => {
     // Basic validation
     const newErrors = {};
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = t('usernameRequired');
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('passwordRequired');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -65,15 +67,15 @@ const LoginForm = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold text-neutral-900">
-            Sign in to your account
+            {t('signInTitle')}
           </h2>
           <p className="mt-2 text-sm text-neutral-600">
-            Or{' '}
+            {t('or')}{' '}
             <Link
               to="/register"
               className="font-medium text-orange-600 hover:text-orange-500"
             >
-              create a new account
+              {t('createNewAccount')}
             </Link>
           </p>
         </div>
@@ -87,25 +89,25 @@ const LoginForm = () => {
 
           <div className="space-y-4">
             <Input
-              label="Username"
+              label={t('username')}
               name="username"
               type="text"
               autoComplete="username"
               value={formData.username}
               onChange={handleChange}
               error={errors.username}
-              placeholder="Enter your username"
+              placeholder={t('enterUsername')}
             />
 
             <Input
-              label="Password"
+              label={t('password')}
               name="password"
               type="password"
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
               error={errors.password}
-              placeholder="Enter your password"
+              placeholder={t('enterPassword')}
             />
           </div>
 
@@ -115,7 +117,7 @@ const LoginForm = () => {
             loading={isLoading}
             size="lg"
           >
-            Sign In
+            {t('signIn')}
           </Button>
         </form>
       </div>
