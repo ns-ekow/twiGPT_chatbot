@@ -30,7 +30,7 @@ def create_app():
     # Create tables
     with app.app_context():
         # Drop tables to handle schema changes (dev only)
-        db.drop_all()
+        # db.drop_all()
         db.create_all()
 
     # Start background model pre-loading if configured
