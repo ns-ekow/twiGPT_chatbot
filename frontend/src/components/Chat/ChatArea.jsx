@@ -1,27 +1,28 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
+import { useTheme } from '../../context/ThemeContext';
 import Message from './Message';
 import ParallelMessage from './ParallelMessage';
 import MessageInput from './MessageInput';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
-const EmptyState = () => (
+const EmptyState = ({ isDark }) => (
   <div className="flex-1 flex items-center justify-center p-8">
     <div className="text-center max-w-md">
-      <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <ChatBubbleLeftRightIcon className="w-8 h-8 text-orange-600" />
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-orange-900' : 'bg-orange-100'}`}>
+        <ChatBubbleLeftRightIcon className={`w-8 h-8 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
       </div>
-      <h3 className="text-lg text-red-500 font-medium text-neutral-900 mb-2">
+      <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-neutral-100' : 'text-neutral-900'}`}>
         Welcome to TwiGpt
       </h3>
-      <p className="text-neutral-600 text-sm leading-relaxed">
+      <p className={`text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
         Start a conversation with your local AI assistant. Your data stays private
         and runs entirely on your machine using Ollama.
       </p>
-      <div className="mt-6 p-4 bg-neutral-50 rounded-lg text-left">
-        <h4 className="font-medium text-neutral-900 mb-2">Tips:</h4>
-        <ul className="text-sm text-neutral-600 space-y-1">
+      <div className={`mt-6 p-4 rounded-lg text-left ${isDark ? 'bg-neutral-800' : 'bg-neutral-50'}`}>
+        <h4 className={`font-medium mb-2 ${isDark ? 'text-neutral-100' : 'text-neutral-900'}`}>Tips:</h4>
+        <ul className={`text-sm space-y-1 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
           <li>• Ask questions, request explanations, or get help with code</li>
           <li>• Switch between different AI models anytime</li>
           <li>• All conversations are saved locally</li>
@@ -33,6 +34,7 @@ const EmptyState = () => (
 
 const ChatArea = () => {
   const { currentConversation, messages, isLoading, selectResponse } = useChat();
+  const { isDark } = useTheme();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
@@ -48,7 +50,7 @@ const ChatArea = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-neutral-600">Loading conversation...</p>
+          <p className={`mt-4 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Loading conversation...</p>
         </div>
       </div>
     );
@@ -57,7 +59,7 @@ const ChatArea = () => {
   if (!currentConversation && messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col">
-        <EmptyState />
+        <EmptyState isDark={isDark} />
         <MessageInput />
       </div>
     );
@@ -67,13 +69,13 @@ const ChatArea = () => {
     <div className="flex-1 flex flex-col">
       {/* Chat Header */}
       {currentConversation && (
-        <div className="border-b border-neutral-200 bg-white px-4 py-3">
+        <div className={`border-b px-4 py-3 ${isDark ? 'border-neutral-700 bg-neutral-800' : 'border-neutral-200 bg-white'}`}>
           <div className="max-w-3xl mx-auto flex items-center justify-between">
             <div>
-              <h2 className="font-medium text-neutral-900 truncate">
+              <h2 className={`font-medium truncate ${isDark ? 'text-neutral-100' : 'text-neutral-900'}`}>
                 {currentConversation.title}
               </h2>
-              <p className="text-sm text-neutral-500">
+              <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 {messages.length} messages • {currentConversation.model_name}
               </p>
             </div>

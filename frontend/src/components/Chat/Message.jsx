@@ -12,64 +12,66 @@ import {
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import api from '../../services/api';
-
-const CodeBlock = ({ language, value }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
-    }
-  };
-
-  return (
-    <div className="relative group">
-      <div className="flex items-center justify-between bg-neutral-800 px-4 py-2 rounded-t-lg">
-        <span className="text-sm text-neutral-300 font-mono">
-          {language || 'code'}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="flex items-center space-x-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs transition-colors"
-        >
-          {copied ? (
-            <>
-              <CheckIcon className="w-3 h-3" />
-              <span>Copied!</span>
-            </>
-          ) : (
-            <>
-              <ClipboardIcon className="w-3 h-3" />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
-      </div>
-      <SyntaxHighlighter
-        language={language}
-        style={oneDark}
-        customStyle={{
-          margin: 0,
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
-        }}
-      >
-        {value}
-      </SyntaxHighlighter>
-    </div>
-  );
-};
+import { useTheme } from '../../context/ThemeContext';
 
 const Message = ({ message, isLast = false }) => {
+  const { isDark } = useTheme();
   const isUser = message.role === 'user';
   const isStreaming = message.isStreaming;
   const hasError = message.error;
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const hasPreGeneratedAudio = message.audio_url && !isUser;
+
+  const CodeBlock = ({ language, value }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy code:', err);
+      }
+    };
+
+    return (
+      <div className="relative group">
+        <div className={`flex items-center justify-between px-4 py-2 rounded-t-lg ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`}>
+          <span className={`text-sm font-mono ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+            {language || 'code'}
+          </span>
+          <button
+            onClick={handleCopy}
+            className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300' : 'bg-neutral-300 hover:bg-neutral-400 text-neutral-700'}`}
+          >
+            {copied ? (
+              <>
+                <CheckIcon className="w-3 h-3" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <ClipboardIcon className="w-3 h-3" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+        <SyntaxHighlighter
+          language={language}
+          style={isDark ? oneDark : oneLight}
+          customStyle={{
+            margin: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+          }}
+        >
+          {value}
+        </SyntaxHighlighter>
+      </div>
+    );
+  };
 
   const formatTime = (timestamp) => {
     try {
@@ -114,7 +116,7 @@ const Message = ({ message, isLast = false }) => {
   };
 
   return (
-    <div className={`group px-4 py-6 ${isUser ? 'bg-neutral-50' : 'bg-white'}`}>
+    <div className={`group px-4 py-6 ${isUser ? 'bg-neutral-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900'}`}>
       <div className="max-w-3xl mx-auto">
         <div className="flex space-x-4">
           {/* Avatar */}
@@ -135,10 +137,10 @@ const Message = ({ message, isLast = false }) => {
           {/* Message Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline space-x-2 mb-2">
-              <span className="font-medium text-neutral-900">
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">
                 {isUser ? 'You' : 'Assistant'}
               </span>
-              <span className="text-xs text-neutral-400">
+              <span className="text-xs text-neutral-400 dark:text-neutral-500">
                 {formatTime(message.timestamp)}
               </span>
               {!isUser && !isStreaming && !hasError && (
@@ -172,7 +174,7 @@ const Message = ({ message, isLast = false }) => {
             </div>
 
             <div className={`prose prose-sm max-w-none ${
-              hasError ? 'text-red-600' : 'text-neutral-900'
+              hasError ? 'text-red-600 dark:text-red-400' : 'text-neutral-900 dark:text-neutral-100'
             }`}>
               {isUser ? (
                 <p className="whitespace-pre-wrap">{message.content}</p>
@@ -194,7 +196,7 @@ const Message = ({ message, isLast = false }) => {
 
                       return (
                         <code
-                          className="bg-neutral-100 text-orange-600 px-1 py-0.5 rounded text-sm font-mono"
+                          className="bg-neutral-100 dark:bg-neutral-800 text-orange-600 dark:text-orange-400 px-1 py-0.5 rounded text-sm font-mono"
                           {...props}
                         >
                           {children}
@@ -206,7 +208,7 @@ const Message = ({ message, isLast = false }) => {
                     },
                     blockquote({ children }) {
                       return (
-                        <blockquote className="border-l-4 border-orange-200 pl-4 my-4 text-neutral-700 italic">
+                        <blockquote className="border-l-4 border-orange-200 dark:border-orange-700 pl-4 my-4 text-neutral-700 dark:text-neutral-300 italic">
                           {children}
                         </blockquote>
                       );
@@ -214,7 +216,7 @@ const Message = ({ message, isLast = false }) => {
                     table({ children }) {
                       return (
                         <div className="overflow-x-auto my-4">
-                          <table className="min-w-full border-collapse border border-neutral-200">
+                          <table className="min-w-full border-collapse border border-neutral-200 dark:border-neutral-700">
                             {children}
                           </table>
                         </div>
@@ -222,14 +224,14 @@ const Message = ({ message, isLast = false }) => {
                     },
                     th({ children }) {
                       return (
-                        <th className="border border-neutral-200 bg-neutral-50 px-3 py-2 text-left font-medium">
+                        <th className="border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-3 py-2 text-left font-medium text-neutral-900 dark:text-neutral-100">
                           {children}
                         </th>
                       );
                     },
                     td({ children }) {
                       return (
-                        <td className="border border-neutral-200 px-3 py-2">
+                        <td className="border border-neutral-200 dark:border-neutral-700 px-3 py-2 text-neutral-900 dark:text-neutral-100">
                           {children}
                         </td>
                       );

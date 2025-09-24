@@ -10,6 +10,10 @@
   code {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  html {
+    /* Background handled by components */
+  }
 }
 
 @layer components {

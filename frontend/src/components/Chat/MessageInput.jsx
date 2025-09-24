@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PaperAirplaneIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
+import { useTheme } from '../../context/ThemeContext';
 import Button from '../Common/Button';
 import api from '../../services/api';
 
 const MessageInput = () => {
   const { t } = useTranslation();
+  const { isDark } = useTheme();
   const [message, setMessage] = useState('');
   const [rows, setRows] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
@@ -64,6 +66,29 @@ const MessageInput = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    } else if (e.key === 'Tab') {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const pos = textarea.selectionStart;
+        if (pos > 0) {
+          const char = message[pos - 1];
+          if (char === 'e') {
+            e.preventDefault();
+            const newMessage = message.slice(0, pos - 1) + 'ɛ' + message.slice(pos);
+            setMessage(newMessage);
+            setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd = pos;
+            }, 0);
+          } else if (char === 'o') {
+            e.preventDefault();
+            const newMessage = message.slice(0, pos - 1) + 'ɔ' + message.slice(pos);
+            setMessage(newMessage);
+            setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd = pos;
+            }, 0);
+          }
+        }
+      }
     }
   };
 
@@ -120,9 +145,43 @@ const MessageInput = () => {
 
   const isDisabled = isStreaming || !message.trim() || isProcessingAudio;
 
+  const insertSpecialChar = (char) => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newMessage = message.slice(0, start) + char + message.slice(end);
+      setMessage(newMessage);
+      // Set cursor after inserted char
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 1;
+        textarea.focus();
+      }, 0);
+    }
+  };
+
   return (
-    <div className="border-t border-neutral-200 bg-white">
+    <div className={`border-t ${isDark ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-200 bg-white'}`}>
       <div className="max-w-3xl mx-auto p-4">
+        {/* Special Characters Pill */}
+        <div className="mb-2 flex justify-center">
+          <div className={`flex space-x-1 rounded-full px-3 py-1 ${isDark ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+            <button
+              type="button"
+              onClick={() => insertSpecialChar('ɛ')}
+              className={`px-2 py-1 text-sm font-medium rounded transition-colors ${isDark ? 'text-neutral-300 hover:bg-neutral-600' : 'text-neutral-700 hover:bg-neutral-200'}`}
+            >
+              ɛ
+            </button>
+            <button
+              type="button"
+              onClick={() => insertSpecialChar('ɔ')}
+              className={`px-2 py-1 text-sm font-medium rounded transition-colors ${isDark ? 'text-neutral-300 hover:bg-neutral-600' : 'text-neutral-700 hover:bg-neutral-200'}`}
+            >
+              ɔ
+            </button>
+          </div>
+        </div>
         <form onSubmit={handleSubmit} className="relative">
           <div className="flex items-end space-x-3">
             <div className="flex-1 relative">
@@ -137,11 +196,11 @@ const MessageInput = () => {
                     : t('startConversation')
                 }
                 disabled={isStreaming}
-                className={`w-full px-4 py-3 pr-12 border border-neutral-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                  isStreaming ? 'bg-neutral-50 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`w-full px-4 py-3 pr-12 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+                  isStreaming ? `${isDark ? 'bg-neutral-700' : 'bg-neutral-50'} cursor-not-allowed` : `${isDark ? 'bg-neutral-800' : 'bg-white'}`
+                } ${isDark ? 'border-neutral-600' : 'border-neutral-300'}`}
                 rows={rows}
-                style={{ minHeight: '52px', maxHeight: '200px' }}
+                style={{ minHeight: '40px', maxHeight: '200px' }}
               />
 
               <div className="absolute right-3 bottom-3 flex space-x-2">
@@ -171,20 +230,20 @@ const MessageInput = () => {
           </div>
 
           {isStreaming && (
-            <div className="mt-2 text-sm text-orange-600 flex items-center space-x-2">
+            <div className={`mt-2 text-sm flex items-center space-x-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
               <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
               <span>{t('assistantThinking')}</span>
             </div>
           )}
 
           {isProcessingAudio && (
-            <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
+            <div className={`mt-2 text-sm flex items-center space-x-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               <span>{t('processingAudio')}</span>
             </div>
           )}
 
-          <div className="mt-2 text-xs text-neutral-500 flex items-center justify-between">
+          <div className={`mt-2 text-xs flex items-center justify-between ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
             <span>
               {currentConversation ? (
                 `${t('usingModel')} ${currentConversation.model_name}`
