@@ -9,3 +9,8 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     OLLAMA_BASE_URL = 'http://localhost:11434'
     GHANANLP_API_KEY = os.environ.get('GHANANLP_API_KEY') or 'your-ghananlp-api-key-here'
+    # HuggingFace model pre-loading configuration
+    PRELOAD_HF_MODELS = [
+        "FelixYaw/twi-lora-model",
+        "FelixYaw/twi-gpt-lora-kaggle"
+    ]  # Empty list disables pre-loading

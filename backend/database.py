@@ -28,3 +28,11 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     audio_url = db.Column(db.String(255), nullable=True)  # Path to pre-generated audio file
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class FineTuneData(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_query = db.Column(db.Text, nullable=False)
+    chosen_answer = db.Column(db.Text, nullable=False)
+    model_used = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)

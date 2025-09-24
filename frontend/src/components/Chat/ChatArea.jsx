@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import Message from './Message';
+import ParallelMessage from './ParallelMessage';
 import MessageInput from './MessageInput';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
@@ -31,7 +32,7 @@ const EmptyState = () => (
 );
 
 const ChatArea = () => {
-  const { currentConversation, messages, isLoading } = useChat();
+  const { currentConversation, messages, isLoading, selectResponse } = useChat();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
@@ -86,13 +87,37 @@ const ChatArea = () => {
         className="flex-1 overflow-y-auto"
       >
         <div className="min-h-full">
-          {messages.map((message, index) => (
-            <Message
-              key={message.id}
-              message={message}
-              isLast={index === messages.length - 1}
-            />
-          ))}
+          {messages.reduce((acc, message, index) => {
+            if (message.parallel && message.role === 'assistant') {
+              // Find the pair
+              const nextMessage = messages[index + 1];
+              if (nextMessage && nextMessage.parallel && nextMessage.role === 'assistant') {
+                acc.push(
+                  <ParallelMessage
+                    key={`parallel-${message.id}-${nextMessage.id}`}
+                    message1={message}
+                    message2={nextMessage}
+                    onSelect={(selectedMessage) => {
+                      // Find the user message (query)
+                      const userMessageIndex = messages.findIndex(msg => msg.role === 'user' && msg.id.startsWith('temp-'));
+                      const query = userMessageIndex !== -1 ? messages[userMessageIndex].content : '';
+                      selectResponse(currentConversation.id, query, selectedMessage);
+                    }}
+                  />
+                );
+                // Skip next message
+                return acc;
+              }
+            }
+            acc.push(
+              <Message
+                key={message.id}
+                message={message}
+                isLast={index === messages.length - 1}
+              />
+            );
+            return acc;
+          }, [])}
           <div ref={messagesEndRef} />
         </div>
       </div>

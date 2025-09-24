@@ -2,10 +2,16 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 import torch
 from typing import Generator, Dict, Any, List
+import threading
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HuggingFaceService:
     def __init__(self):
         self.models = {}
+        self.loading_status = {}  # Track loading status: 'not_started', 'loading', 'loaded', 'failed'
         self._load_available_models()
 
     def _load_available_models(self):
@@ -27,9 +33,37 @@ class HuggingFaceService:
             'peft_base': "FelixYaw/twi-model"
         }
 
+        # Initialize loading status for all models
+        for model_name in self.models:
+            self.loading_status[model_name] = 'not_started'
+
     def get_available_models(self) -> Dict[str, Any]:
         """Get list of available Hugging Face models"""
         return self.models
+
+    def preload_models(self, model_names: List[str]):
+        """Pre-load specified models in background"""
+        def load_worker():
+            for model_name in model_names:
+                if model_name in self.models:
+                    try:
+                        logger.info(f"Pre-loading model: {model_name}")
+                        self._load_model(model_name)
+                        # Small delay between loads to prevent memory spikes
+                        time.sleep(2)
+                    except Exception as e:
+                        logger.error(f"Failed to pre-load model {model_name}: {str(e)}")
+                else:
+                    logger.warning(f"Model {model_name} not available for pre-loading")
+
+        # Start background loading thread
+        loading_thread = threading.Thread(target=load_worker, daemon=True)
+        loading_thread.start()
+        logger.info(f"Started background pre-loading for models: {model_names}")
+
+    def get_loading_status(self) -> Dict[str, str]:
+        """Get loading status for all models"""
+        return self.loading_status.copy()
 
     def _load_model(self, model_name: str):
         """Lazy load model and tokenizer"""
@@ -37,21 +71,30 @@ class HuggingFaceService:
             raise ValueError(f"Model {model_name} not available")
 
         if self.models[model_name]['model'] is None:
-            print(f"Loading Hugging Face model: {model_name}")
-            self.models[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(model_name)
+            self.loading_status[model_name] = 'loading'
+            try:
+                logger.info(f"Loading Hugging Face model: {model_name}")
+                self.models[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(model_name)
 
-            # Check if this is a PEFT model
-            if 'peft_base' in self.models[model_name]:
-                base_model_name = self.models[model_name]['peft_base']
-                print(f"Loading PEFT model with base: {base_model_name}")
-                base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
-                self.models[model_name]['model'] = PeftModel.from_pretrained(base_model, model_name)
-            else:
-                self.models[model_name]['model'] = AutoModelForCausalLM.from_pretrained(model_name)
+                # Check if this is a PEFT model
+                if 'peft_base' in self.models[model_name]:
+                    base_model_name = self.models[model_name]['peft_base']
+                    logger.info(f"Loading PEFT model with base: {base_model_name}")
+                    base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
+                    self.models[model_name]['model'] = PeftModel.from_pretrained(base_model, model_name)
+                else:
+                    self.models[model_name]['model'] = AutoModelForCausalLM.from_pretrained(model_name)
 
-            # Move to GPU if available
-            if torch.cuda.is_available():
-                self.models[model_name]['model'] = self.models[model_name]['model'].cuda()
+                # Move to GPU if available
+                if torch.cuda.is_available():
+                    self.models[model_name]['model'] = self.models[model_name]['model'].cuda()
+
+                self.loading_status[model_name] = 'loaded'
+                logger.info(f"Successfully loaded model: {model_name}")
+            except Exception as e:
+                self.loading_status[model_name] = 'failed'
+                logger.error(f"Failed to load model {model_name}: {str(e)}")
+                raise
 
     def _filter_assistant_response(self, response: str) -> str:
         """Filter response to extract only the first Assistant response and avoid repetitions"""
@@ -67,6 +110,11 @@ class HuggingFaceService:
         next_assistant = assistant_response.find("Assistant:")
         if next_assistant != -1:
             assistant_response = assistant_response[:next_assistant].strip()
+
+        # Cut at the first full stop (period) for concise responses
+        first_period = assistant_response.find(".")
+        if first_period != -1:
+            assistant_response = assistant_response[:first_period + 1].strip()
 
         return assistant_response
 

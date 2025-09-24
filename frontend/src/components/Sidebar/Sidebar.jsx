@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon,
@@ -10,13 +10,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import ConversationList from './ConversationList';
 import ModelSelector from './ModelSelector';
+import ParallelModelSelectorModal from './ParallelModelSelectorModal';
 import LanguageSwitcher from '../Common/LanguageSwitcher';
 import Button from '../Common/Button';
 
 const Sidebar = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const { createNewConversation } = useChat();
+  const { createNewConversation, parallelMode, setParallelMode, availableModels, currentConversation, secondModel, setSecondModel } = useChat();
+  const [showModal, setShowModal] = useState(false);
 
   const handleNewChat = async () => {
     try {
@@ -24,6 +26,20 @@ const Sidebar = () => {
     } catch (error) {
       console.error('Failed to create new conversation:', error);
     }
+  };
+
+  const handleParallelToggle = (checked) => {
+    if (checked) {
+      setShowModal(true);
+    } else {
+      setParallelMode(false);
+    }
+  };
+
+  const handleSelectSecondModel = (model) => {
+    setSecondModel(model);
+    setParallelMode(true);
+    setShowModal(false);
   };
 
   return (
@@ -49,6 +65,19 @@ const Sidebar = () => {
         </div>
 
         <ModelSelector />
+
+        {/* Parallel Mode Toggle */}
+        <div className="px-4 py-2">
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={parallelMode}
+              onChange={(e) => handleParallelToggle(e.target.checked)}
+              className="w-4 h-4 text-orange-600 bg-neutral-100 border-neutral-300 rounded focus:ring-orange-500 focus:ring-2"
+            />
+            <span className="text-sm text-neutral-700">{t('parallelMode')}</span>
+          </label>
+        </div>
       </div>
 
       {/* Conversation List */}
@@ -87,6 +116,15 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
+
+      <ParallelModelSelectorModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        availableModels={availableModels}
+        currentModel={currentConversation?.model_name}
+        selectedSecondModel={secondModel}
+        onSelectSecondModel={handleSelectSecondModel}
+      />
     </div>
   );
 };

@@ -14,7 +14,10 @@ class ApiService {
     // Add auth token to requests
     this.api.interceptors.request.use((config) => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken && config.url?.includes('/admin')) {
+        config.headers.Authorization = `Bearer ${adminToken}`;
+      } else if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
@@ -109,7 +112,7 @@ class ApiService {
   }
 
   // Streaming message endpoint
-  async sendMessage(conversationId, message, onChunk, onComplete, onError) {
+  async sendMessage(conversationId, message, onChunk, onComplete, onError, parallel = false, secondModel = null) {
     try {
       const response = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages`, {
         method: 'POST',
@@ -117,7 +120,7 @@ class ApiService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, parallel, second_model: secondModel }),
       });
 
       if (!response.ok) {
@@ -150,7 +153,7 @@ class ApiService {
               }
 
               if (data.content) {
-                onChunk(data.content);
+                onChunk(data.content, data.model, data.model_index);
               }
             } catch (e) {
               console.error('Error parsing SSE data:', e);
@@ -172,6 +175,35 @@ class ApiService {
   async pullModel(modelName) {
     const response = await this.api.post(`/models/${modelName}/pull`);
     return response.data;
+  }
+
+  async selectResponse(conversationId, query, chosenAnswer, modelUsed) {
+    const response = await this.api.post(`/chat/conversations/${conversationId}/select_response`, {
+      query,
+      chosen_answer: chosenAnswer,
+      model_used: modelUsed,
+    });
+    return response.data;
+  }
+
+  // Admin endpoints
+  async adminLogin(username, password) {
+    const response = await this.api.post('/admin/login', { username, password });
+    return response.data;
+  }
+
+  async getAdminStats() {
+    const response = await this.api.get('/admin/stats');
+    return response.data;
+  }
+
+  async getFineTuneData() {
+    const response = await this.api.get('/admin/fine-tune-data');
+    return response.data;
+  }
+
+  async exportCSV() {
+    return this.api.get('/admin/export-csv', { responseType: 'blob' });
   }
 }
 

@@ -7,6 +7,8 @@ import ErrorBoundary from './components/Common/ErrorBoundary';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
+import AdminLoginForm from './components/Auth/AdminLoginForm';
+import AdminDashboard from './components/Admin/AdminDashboard';
 import ChatPage from './components/Chat/ChatPage';
 
 function App() {
@@ -21,6 +23,7 @@ function App() {
                   {/* Public routes */}
                   <Route path="/login" element={<LoginForm />} />
                   <Route path="/register" element={<RegisterForm />} />
+                  <Route path="/admin" element={<AdminLoginForm />} />
 
                   {/* Protected routes */}
                   <Route
@@ -32,6 +35,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
                   {/* Redirect root to chat */}
                   <Route path="/" element={<Navigate to="/chat" replace />} />

@@ -36,5 +36,6 @@
   "sendInstructions": "Enter to send • Shift+Enter for new line",
   "microphoneError": "Could not access microphone. Please check permissions.",
   "transcriptionError": "Failed to transcribe audio. Please try again.",
-  "signOut": "Sign out"
+  "signOut": "Sign out",
+  "parallelMode": "Parallel Mode"
 }
